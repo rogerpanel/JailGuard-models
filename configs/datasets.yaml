@@ -1,0 +1,64 @@
+# Dataset registry. Public sources are fetched by scripts/download_datasets.sh.
+# The JailCampaign benchmark is synthesized locally by build_jail_campaign.py.
+
+datasets:
+  jailbreak_bench:
+    source: github
+    url: https://github.com/JailbreakBench/jailbreakbench
+    subset: behaviors
+    temporal_extension: dan_communities  # cross-account coordination metadata
+    size: 18200
+    citation: chao2024jailbreakbench
+
+  harm_bench:
+    source: github
+    url: https://github.com/centerforaisafety/HarmBench
+    subset: all_behaviors
+    size: 51000
+    role: zero_shot_eval
+    citation: mazeika2024harmbench
+
+  wild_jailbreak:
+    source: huggingface
+    name: allenai/wildjailbreak
+    splits: [vanilla, adversarial]
+    size: 262000
+    citation: jiang2024wildjailbreak
+
+  lmsys_chat:
+    source: huggingface
+    name: lmsys/lmsys-chat-1m
+    size: 1000000
+    use: benign_traffic_baseline
+    citation: zheng2024lmsyschat
+
+  cic_iot_2023:
+    source: kaggle
+    # User-specified Kaggle dataset bundles:
+    #   General Network Traffic      10.34740/kaggle/dsv/12483891
+    #   Cloud, Microservices & Edge  10.34740/KAGGLE/DSV/12479689
+    dois:
+      - 10.34740/kaggle/dsv/12483891
+      - 10.34740/KAGGLE/DSV/12479689
+    official_url: https://www.unb.ca/cic/datasets/iotdataset-2023.html
+    size: 46000000
+    attack_types: 33
+    citation: neto2023ciciot
+
+  jail_campaign:
+    source: local_synthesis
+    script: scripts/build_jail_campaign.py
+    n_interactions: 523000
+    n_campaigns: 5247
+    n_users: 12400
+    strategies:
+      - gcg
+      - pair
+      - autodan
+      - ample_gcg
+      - arr_attack
+      - tree_of_attack
+      - crescendo
+      - many_shot
+      - actor_attack
+      - mixed

@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  ctdgnn:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    image: ct-dgnn-jailguard:1.0
+    environment:
+      - CTDGNN_CONFIG=/app/configs/default.yaml
+      - REDIS_URL=redis://redis:6379/0
+      - POSTGRES_URL=postgresql://ctdgnn:ctdgnn@postgres:5432/ctdgnn
+    depends_on:
+      - redis
+      - postgres
+    ports:
+      - "8000:8000"
+
+  redis:
+    image: redis:7.2-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ctdgnn
+      POSTGRES_PASSWORD: ctdgnn
+      POSTGRES_DB: ctdgnn
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+
+volumes:
+  redis-data:
+  pg-data:

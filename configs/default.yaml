@@ -1,0 +1,86 @@
+# Default configuration for CT-DGNN-JailGuard.
+# Values reflect Section VI.E ("Implementation Details") of the manuscript.
+
+seed: 42
+device: cuda
+run_dir: runs
+
+data:
+  dataset: jail_campaign                # one of: jailbreak_bench, harm_bench,
+                                        #         wild_jailbreak, lmsys_chat,
+                                        #         cic_iot_2023, jail_campaign
+  root: data/
+  sentence_transformer: sentence-transformers/all-MiniLM-L6-v2
+  similarity_threshold: 0.85            # θ_sim for shares_pattern edges
+  faiss_index: IVF1024,PQ32             # approx-NN index type
+  batch_size: 32                        # micro-batch of subgraphs
+  num_workers: 4
+  max_history_hours: 24                 # rolling integration window T
+
+graph:
+  node_dims:
+    user: 64
+    session: 128
+    query: 384
+    model: 32
+  embed_dim: 128                        # d — shared embedding space after projection
+  relation_types:
+    - initiates
+    - contains
+    - targets
+    - responds
+    - follows
+    - shares_pattern
+  time_scales_sec:                      # K=8 multi-scale temporal constants
+    - 1
+    - 10
+    - 60
+    - 600
+    - 3600
+    - 21600
+    - 86400
+    - 604800
+
+model:
+  hidden_dim: 128
+  num_heads: 4
+  ode_steps: 3                          # L=3
+  ode_solver: dopri5
+  ode_rtol: 1.0e-3
+  ode_atol: 1.0e-4
+  adjoint: true                         # O(1) memory training
+  dropout: 0.1
+  llm:
+    enabled: true
+    model_name: mistralai/Mistral-7B-Instruct-v0.2
+    async: true                         # run off main detection path
+
+robustness:
+  spectral_norm: true
+  power_iterations: 1                   # one-step power iteration
+  jacobian_lambda: 0.01                 # λ_J
+  lipschitz_target_f: 1.0               # L_f ≤ 1.0 after spectral norm
+  lipschitz_target_g: 1.0               # L_g ≤ 1.0
+  certified_radius_margin: 0.15         # target ε*
+  pgd_epsilons: [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35]
+  pgd_steps: 40
+  pgd_step_size: 0.01
+
+training:
+  epochs: 100
+  optimizer: adamw
+  lr: 5.0e-4
+  weight_decay: 1.0e-4
+  scheduler: cosine
+  grad_clip: 1.0
+  warmup_epochs: 5
+  early_stop_patience: 15
+  loss_weights:
+    classification: 1.0
+    jacobian: 0.01
+    contrastive: 0.1                    # zero-shot contrastive term
+
+eval:
+  campaign_iou: 0.5                     # threshold for campaign F1
+  latency_samples: 1000
+  zero_shot_leave_out: [crescendo, many_shot, arr_attack]
