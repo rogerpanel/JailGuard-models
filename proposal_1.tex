@@ -1,0 +1,345 @@
+\documentclass[12pt,a4paper]{article}
+
+% Encoding and language
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+
+% Page layout
+\usepackage[a4paper, margin=2.5cm]{geometry}
+\usepackage{setspace}
+\setstretch{1.15}
+
+% Graphics and figures
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{subcaption}
+
+% Tables
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+
+% Mathematics
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+
+% Algorithms
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+% Hyperlinks
+\usepackage[dvipsnames]{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    citecolor=green!50!black,
+    urlcolor=blue!60!black
+}
+
+% Bibliography
+\usepackage[numbers,sort&compress]{natbib}
+
+% Theorems
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}{Remark}
+
+% Custom commands
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\calG}{\mathcal{G}}
+\newcommand{\calL}{\mathcal{L}}
+\newcommand{\calO}{\mathcal{O}}
+\newcommand{\norm}[1]{\left\|#1\right\|}
+
+% Paragraph settings
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+\begin{document}
+
+% ============================================================
+% TITLE PAGE
+% ============================================================
+\begin{center}
+{\LARGE \textbf{Postdoctoral Research Proposal}}
+
+\vspace{0.5cm}
+
+{\Large \textbf{Proposal 1 of 6}}
+
+\vspace{1cm}
+
+{\huge \textbf{CT-DGNN-JailGuard: Continuous-Time Dynamic Graph Neural Networks for Real-Time Detection of LLM Jailbreak Campaigns via API Interaction Graphs}}
+
+\vspace{1cm}
+
+{\large \textbf{Principal Investigator:} Dr.\ Roger Nick Anaedevha}
+
+\vspace{0.3cm}
+
+{\large \textbf{Affiliation:} [Host Institution]}
+
+\vspace{0.3cm}
+
+{\large \textbf{Date:} April 2026}
+
+\vspace{0.3cm}
+
+{\large \textbf{Duration:} 24 months}
+
+\vspace{0.3cm}
+
+{\large \textbf{Field:} AI Security $\times$ Dynamic Graph Neural Networks $\times$ NLP}
+
+\end{center}
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+
+\tableofcontents
+
+\newpage
+
+% ============================================================
+\section{Executive Summary}
+% ============================================================
+
+This proposal addresses a critical gap at the intersection of LLM security and dynamic graph learning: \textbf{no existing system models the temporal, relational, and evolving structure of coordinated jailbreak campaigns against LLM APIs as continuous-time dynamic graphs with certified detection guarantees}. Current defenses operate at the individual prompt level (SmoothLLM, Erase-and-Check) or use static classifiers, failing to detect distributed multi-turn attacks where individual queries appear benign but form malicious patterns across users, sessions, and time. We propose \textbf{CT-DGNN-JailGuard}, a framework that: (1) constructs a continuously-evolving heterogeneous interaction graph from API traffic, (2) applies continuous-time Neural ODE-based graph dynamics (extending CT-TGNN) to learn temporal embeddings of users, sessions, and queries, (3) provides Lipschitz-certified robustness bounds on detection decisions, and (4) integrates LLM semantic analysis for zero-shot novel attack recognition. Expected outcomes include $\geq$95\% detection of coordinated jailbreak campaigns with $<$50ms latency, certified robustness at perturbation radius $\epsilon=0.15$, and a new public benchmark dataset.
+
+% ============================================================
+\section{Problem Statement and Research Gap}
+% ============================================================
+
+\subsection{The Jailbreak Landscape in 2024--2026}
+
+The LLM jailbreaking arms race has reached an inflection point. Black-box attacks achieve 80--94\% attack success rates (ASR) on proprietary APIs, while multi-turn agent-driven strategies decompose harmful requests across conversation turns to reach $\sim$95\% ASR. The ArrAttack framework (ICLR 2025) trains universal robustness-judgment models on $\sim$49,000 successful jailbreak prompts, bypassing SmoothLLM-style defenses on GPT-4 and Claude-3.
+
+\subsection{The Critical Gap: Temporal-Relational Attack Structure}
+
+Current defenses are \textbf{prompt-centric}: they analyze each query independently, applying perturbation-based smoothing, perplexity filtering, or instruction-following classifiers. This misses the fundamental structure of real-world jailbreak campaigns:
+
+\begin{enumerate}
+    \item \textbf{Temporal coordination:} Attackers probe systematically, refining prompts over hours/days based on prior responses, creating temporal dependencies between queries.
+    \item \textbf{Multi-user orchestration:} Coordinated campaigns distribute attack components across multiple API keys/accounts, making individual queries appear innocent.
+    \item \textbf{Session graph evolution:} Attack patterns evolve dynamically---what constitutes a ``probe'' changes as the attacker learns the defense surface.
+    \item \textbf{Cross-model transfer:} Attackers test on open-weight models and transfer to proprietary APIs, creating relational patterns across model endpoints.
+\end{enumerate}
+
+\textbf{No existing work models these relational-temporal structures as continuous-time dynamic graphs.} The closest approaches---JailbreakBench (NeurIPS 2024) and TeleAI-Safety---are static evaluation frameworks, not detection systems. AgentArmor uses program dependency graphs but only for single-agent execution traces, not cross-user API traffic.
+
+\subsection{Why Dynamic Graph Neural Networks?}
+
+The PI's CT-TGNN framework, which unifies graph message-passing with Neural ODE dynamics on evolving topologies, is uniquely suited to this problem because:
+
+\begin{itemize}
+    \item API interactions naturally form heterogeneous graphs: users $\leftrightarrow$ sessions $\leftrightarrow$ queries $\leftrightarrow$ model endpoints $\leftrightarrow$ response patterns.
+    \item Jailbreak campaigns unfold in continuous time with irregular event spacing---exactly the regime where Neural ODEs outperform discrete-time snapshots.
+    \item The Gr\"onwall-based Lipschitz certificates from CT-TGNN transfer directly to detection robustness guarantees.
+    \item The multi-scale temporal dynamics (fast probes vs.\ slow campaign evolution) match the learnable time-constant architecture.
+\end{itemize}
+
+% ============================================================
+\section{Research Objectives}
+% ============================================================
+
+\begin{enumerate}
+    \item \textbf{O1:} Design a heterogeneous continuous-time interaction graph schema for LLM API traffic that captures user, session, query, semantic, and response modalities.
+    
+    \item \textbf{O2:} Extend CT-TGNN to heterogeneous API-interaction graphs with multi-relational Neural ODE dynamics and attention-based type-specific aggregation.
+    
+    \item \textbf{O3:} Derive Lipschitz-certified detection bounds ensuring that adversarial evasion (query rephrasing, timing perturbation, account switching) within radius $\epsilon$ cannot flip detection decisions.
+    
+    \item \textbf{O4:} Integrate LLM-based semantic embeddings (CyberSecLLM-style) for zero-shot recognition of novel jailbreak categories not seen during training.
+    
+    \item \textbf{O5:} Construct and release a large-scale benchmark dataset of annotated multi-turn, multi-user jailbreak campaigns against multiple LLM APIs.
+    
+    \item \textbf{O6:} Validate the complete system at production scale ($>$10M queries/day) with $<$50ms detection latency.
+\end{enumerate}
+
+% ============================================================
+\section{Proposed Methodology}
+% ============================================================
+
+\subsection{Phase 1: Heterogeneous API Interaction Graph Construction (Months 1--4)}
+
+Define the continuously-evolving heterogeneous graph $\calG(t) = (V(t), E(t), \mathbf{X}(t), \tau)$ where:
+
+\begin{itemize}
+    \item $V(t) = V_u(t) \cup V_s(t) \cup V_q(t) \cup V_m(t) \cup V_r(t)$ are nodes for users, sessions, queries, model endpoints, and response clusters.
+    \item $E(t)$ includes typed edges: \texttt{user-initiates-session}, \texttt{session-contains-query}, \texttt{query-targets-model}, \texttt{query-receives-response}, \texttt{query-semantically-similar-to-query}, \texttt{user-shares-IP-with-user}.
+    \item $\mathbf{X}(t) \in \R^{|V(t)| \times d}$ are node features including: for queries, the LLM embedding vector $\mathbf{e}_q \in \R^{768}$; for users, behavioral statistics; for sessions, temporal metadata.
+    \item $\tau: V \cup E \to \mathcal{T}$ maps each node/edge to its type in the type hierarchy.
+\end{itemize}
+
+Semantic similarity edges are computed using a frozen sentence-transformer encoder, with edges added when cosine similarity exceeds a threshold $\theta_{\text{sim}}$ (tuned on validation data).
+
+\subsection{Phase 2: Continuous-Time Heterogeneous Graph Dynamics (Months 3--8)}
+
+Extend CT-TGNN to heterogeneous graphs. For each node $v$ of type $\tau(v)$, define the neural ODE:
+
+\begin{equation}
+    \frac{d\mathbf{h}_v(t)}{dt} = f_{\tau(v)}\left(\mathbf{h}_v(t),\; \bigoplus_{\substack{u \in \mathcal{N}(v,t) \\ r \in \mathcal{R}(u,v)}} \alpha_{v,u,r}(t) \cdot g_r(\mathbf{h}_u(t), \mathbf{e}_{uv}),\; t;\; \boldsymbol{\theta}_{\tau(v)}\right)
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $f_{\tau(v)}$ is the type-specific dynamics network,
+    \item $\mathcal{N}(v,t)$ is the time-dependent neighborhood,
+    \item $\alpha_{v,u,r}(t)$ are temporal attention coefficients computed via:
+    \begin{equation}
+        \alpha_{v,u,r}(t) = \frac{\exp\left(\text{LeakyReLU}\left(\mathbf{a}_r^\top [\mathbf{W}_r \mathbf{h}_v(t) \| \mathbf{W}_r \mathbf{h}_u(t) \| \phi(t - t_{uv})]\right)\right)}{\sum_{u',r'} \exp(\cdot)}
+    \end{equation}
+    \item $\phi(\cdot)$ is the learnable temporal encoding with multi-scale time constants (from CT-TGNN).
+\end{itemize}
+
+The ODE is solved with adaptive-step Dormand--Prince (dopri5) solver, with adjoint sensitivity for $O(1)$ memory training.
+
+\textbf{Campaign-level detection:} Aggregate node embeddings at the session level via hierarchical pooling, then classify each session as benign/malicious/probe. A graph-level readout over connected sessions detects coordinated campaigns:
+
+\begin{equation}
+    \hat{y}_{\text{campaign}}(t) = \sigma\left(\text{MLP}\left(\text{Set2Set}\left(\{\mathbf{h}_s(t)\}_{s \in \mathcal{S}_{\text{connected}}}\right)\right)\right)
+\end{equation}
+
+\subsection{Phase 3: Lipschitz-Certified Detection Robustness (Months 6--10)}
+
+\begin{theorem}[Certified Detection Stability]
+Let $\calG_1(t)$ and $\calG_2(t)$ be two API interaction graphs differing in at most $k$ query features with $\norm{\mathbf{x}_{q,1} - \mathbf{x}_{q,2}} \leq \epsilon$ for each modified query $q$. If the dynamics $f_{\tau}$ are $L_f$-Lipschitz and the aggregation $g_r$ is $L_g$-Lipschitz, then:
+\begin{equation}
+    \norm{\hat{y}_{\text{campaign},1}(T) - \hat{y}_{\text{campaign},2}(T)} \leq L_{\text{MLP}} \cdot L_{\text{pool}} \cdot k \cdot L_g \cdot e^{L_f T} \cdot \epsilon
+\end{equation}
+\end{theorem}
+
+The certified detection radius is:
+\begin{equation}
+    \epsilon^* = \frac{\Delta_{\text{margin}}}{L_{\text{MLP}} \cdot L_{\text{pool}} \cdot k \cdot L_g \cdot e^{L_f T}}
+\end{equation}
+
+where $\Delta_{\text{margin}}$ is the classification margin. We enforce Lipschitz constraints during training via spectral normalization of all weight matrices and Jacobian regularization of the ODE dynamics, following the methodology validated in the PI's prior work.
+
+\subsection{Phase 4: LLM-Augmented Zero-Shot Detection (Months 8--12)}
+
+Integrate a domain-specific LLM (extending CyberSecLLM) for semantic analysis:
+
+\begin{enumerate}
+    \item \textbf{Query intent classification:} The LLM classifies each query's semantic intent category (information seeking, capability probing, constraint testing, etc.) in zero-shot mode.
+    \item \textbf{Novel attack pattern narration:} When the DGNN detects an anomalous subgraph but cannot classify it, the LLM generates a natural-language description of the attack pattern for analyst review.
+    \item \textbf{Feedback loop:} Analyst-confirmed novel attacks are incorporated via online Bayesian updating (extending UC-HGP) without full retraining.
+\end{enumerate}
+
+\subsection{Phase 5: Benchmark Construction and Validation (Months 10--18)}
+
+Construct \textbf{JailCampaign-2027}, a benchmark containing:
+
+\begin{itemize}
+    \item Synthetic campaigns: Programmatic generation of multi-turn, multi-user jailbreak campaigns using 8 known attack strategies (GCG, PAIR, AutoDAN, AmpleGCG, ArrAttack, tree-of-attack, crescendo, many-shot).
+    \item Semi-realistic campaigns: Red-team exercises with human operators against sandboxed LLM APIs.
+    \item Benign traffic: Production-scale benign API traffic from partner organizations (anonymized).
+    \item Annotations: Campaign boundaries, individual query labels, temporal coordination markers, attack strategy tags.
+\end{itemize}
+
+% ============================================================
+\section{Datasets and Resources}
+% ============================================================
+
+\begin{table}[H]
+\centering
+\caption{Primary Datasets for Training and Evaluation}
+\begin{tabularx}{\textwidth}{@{}lXl@{}}
+\toprule
+\textbf{Dataset} & \textbf{Description} & \textbf{Source} \\
+\midrule
+JailbreakBench & Standardized jailbreak artifacts (GCG, PAIR, AmpleGCG) with defense baselines & \url{https://github.com/JailbreakBench/jailbreakbench} \\
+\addlinespace
+HarmBench & 510 functional categories, 18 attack methods, 4 text-only red teaming modes & \url{https://github.com/centerforaisafety/HarmBench} \\
+\addlinespace
+WildJailbreak & 262K vanilla--adversarial prompt pairs from in-the-wild LLM interactions & \url{https://huggingface.co/datasets/allenai/wildjailbreak} \\
+\addlinespace
+TeleAI-Safety & 19 attack methods, 29 defenses, 19 evaluation protocols & \url{https://github.com/TeleAI-Safety} \\
+\addlinespace
+TGB 2.0 & Temporal graph benchmark (10 domains) for dynamic link prediction & \url{https://tgb.complexdatalab.com/} \\
+\addlinespace
+CIC-IoT-2023 & 84.2M labeled network events, 84 attack types & \url{https://www.unb.ca/cic/datasets/iotdataset-2023.html} \\
+\addlinespace
+LMSYS-Chat-1M & 1M real conversations with 25 LLMs & \url{https://huggingface.co/datasets/lmsys/lmsys-chat-1m} \\
+\addlinespace
+OWASP LLM & Top-10 LLM vulnerability taxonomy and test cases & \url{https://owasp.org/www-project-top-10-for-large-language-model-applications/} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ============================================================
+\section{Expected Outcomes and Deliverables}
+% ============================================================
+
+\begin{enumerate}
+    \item \textbf{CT-DGNN-JailGuard Framework:} Open-source detection system achieving $\geq$95\% campaign-level F1, $\geq$98\% query-level AUC-ROC, with certified robustness at $\epsilon^* \geq 0.15$.
+    
+    \item \textbf{Mathematical Contributions:} Formal proofs of certified detection stability for heterogeneous continuous-time graph dynamics under topological and feature perturbations. Extension of Gr\"onwall-based bounds to multi-relational message-passing.
+    
+    \item \textbf{JailCampaign-2027 Benchmark:} Public dataset of $\geq$500K annotated API interactions forming $\geq$5,000 labeled campaigns across 10+ jailbreak strategy families.
+    
+    \item \textbf{Production Validation:} Demonstrated deployment at $>$10M queries/day with $<$50ms P99 latency on commodity GPU hardware.
+    
+    \item \textbf{Publications:} Target venues: NeurIPS, ICLR, IEEE S\&P, USENIX Security (2--3 papers).
+    
+    \item \textbf{Zero-Shot Transfer:} $\geq$85\% detection of novel jailbreak categories unseen during training, validated on held-out attack families.
+\end{enumerate}
+
+% ============================================================
+\section{Timeline}
+% ============================================================
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Period} & \textbf{Activities} \\
+\midrule
+Months 1--4 & Graph schema design; data collection pipeline; baseline implementation \\
+Months 3--8 & Heterogeneous CT-DGNN architecture; Neural ODE dynamics; training pipeline \\
+Months 6--10 & Lipschitz certification framework; robustness proofs; adversarial training \\
+Months 8--12 & LLM integration; zero-shot detection module; CyberSecLLM adaptation \\
+Months 10--18 & JailCampaign-2027 benchmark construction; red-team exercises \\
+Months 16--22 & Production-scale validation; latency optimization; ablation studies \\
+Months 20--24 & Paper writing; open-source release; benchmark publication \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ============================================================
+\section{Relation to Prior Work by the PI}
+% ============================================================
+
+This proposal directly extends the PI's PhD contributions:
+
+\begin{itemize}
+    \item \textbf{CT-TGNN} $\to$ extended to heterogeneous API-interaction graphs with type-specific dynamics.
+    \item \textbf{Lipschitz certification} $\to$ generalized from network intrusion to jailbreak campaign detection with multi-relational bounds.
+    \item \textbf{CyberSecLLM} $\to$ adapted for zero-shot jailbreak intent classification and attack narration.
+    \item \textbf{RobustIDPS.ai} $\to$ architectural template for production deployment of the detection system.
+    \item \textbf{UC-HGP} $\to$ Bayesian online updating enables adaptation to novel attack families without retraining.
+\end{itemize}
+
+% ============================================================
+\section{Significance and Impact}
+% ============================================================
+
+This work would establish the \textbf{first certified, graph-based, real-time detection framework for coordinated LLM jailbreak campaigns}---moving the defense paradigm from reactive prompt filtering to proactive structural analysis. The mathematical framework would provide the first formal detection guarantees in the API security domain, directly addressing the ``judge reliability crisis'' identified in recent surveys by grounding detection in Lipschitz-certified continuous-time dynamics rather than heuristic classifiers.
+
+\vspace{1cm}
+\hrule
+\vspace{0.3cm}
+\begin{center}
+\textit{End of Proposal 1}
+\end{center}
+
+\end{document}
